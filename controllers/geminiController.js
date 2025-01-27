@@ -11,6 +11,7 @@ const model = genAI.getGenerativeModel({
     model: "gemini-1.5-flash", 
     systemInstruction: "You are a podcast host tasked with turning the info you receive into a podcast format"
 });
+const { createAudioStreamFromText } = require('../elevenLabs');
 
 
 gemini.get('/', async (req, res) => {
@@ -21,11 +22,17 @@ gemini.post('/transcript', async (req, res) => {
     const prompt = req.body.transcript;
     const result = await model.generateContent(prompt);
     const response = await result.response.text();
+    const audioBuffer = await createAudioStreamFromText(response);
+
+    res.set({
+        'Content-Type': 'audio/mpeg',
+        'Transfer-Encoding': 'chunked'
+    })
 
     if(!result) {
         res.status(500).send({error: "Server error"})
     } else {
-        res.status(200).json(response)
+        res.status(200).send(audioBuffer)
     }
 });
 
